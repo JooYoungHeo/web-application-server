@@ -8,6 +8,17 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 
 public class HttpRequestUtils {
+
+    public static final int CONST_METHOD = 0;
+    public static final int CONST_URL = 1;
+    public static final int CONST_PROTOCOL = 2;
+
+
+    public static String parseRequestString(String requestString, int delimiter) {
+        String[] splitRequest = requestString.split(" ");
+        return splitRequest[delimiter];
+    }
+
     /**
      * @param queryString은
      *            URL에서 ? 이후에 전달되는 field1=value1&field2=value2 형식임
