@@ -1,6 +1,9 @@
 package util;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -17,6 +20,10 @@ public class HttpRequestUtils {
     public static String parseRequestString(String requestString, int delimiter) {
         String[] splitRequest = requestString.split(" ");
         return splitRequest[delimiter];
+    }
+
+    public static int getContentLength(Pair pair) {
+        return (pair != null && pair.getKey().equals("Content-Length"))? Integer.parseInt(pair.getValue()) : 0;
     }
 
     /**
