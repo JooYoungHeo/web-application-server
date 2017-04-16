@@ -40,62 +40,48 @@ public class RequestHandler extends Thread {
             String method = HttpRequestUtils.parseRequestString(line, HttpRequestUtils.CONST_METHOD);
             String url = HttpRequestUtils.parseRequestString(line, HttpRequestUtils.CONST_URL);
 
-            if(method.equals("GET")) {
-                boolean isLogin = false;
-                String accept = null;
-                while(true) {
-                    line = br.readLine();
-                    HttpRequestUtils.Pair pair = HttpRequestUtils.parseHeader(line);
-                    boolean flag = HttpRequestUtils.getCookie(pair);
-                    String tmpAccept = HttpRequestUtils.getAccept(pair);
+            boolean loginCookie = false;
+            String contentType = null;
+            int contentLength = 0;
 
-                    if(flag != false) {
-                        isLogin = flag;
-                    }
+            while(true) {
+                line = br.readLine();
+                HttpRequestUtils.Pair pair = HttpRequestUtils.parseHeader(line);
 
-                    if(tmpAccept != null) {
-                        accept = tmpAccept;
-                    }
+                boolean tmpLoginCookie = HttpRequestUtils.getCookie(pair);
+                String tmpContentType = HttpRequestUtils.getContentType(pair);
+                int tmpContentLength = HttpRequestUtils.getContentLength(pair);
 
-                    if(line.equals("")) {
-                        break;
-                    }
+                if (tmpLoginCookie) {
+                   loginCookie = tmpLoginCookie;
                 }
-                if(url.equals("/user/list.html")) {
-                    if(!isLogin) {
-                        DataOutputStream dos = new DataOutputStream(out);
+                if (tmpContentType != null) {
+                    contentType = tmpContentType;
+                }
+                if (tmpContentLength != 0) {
+                    contentLength = tmpContentLength;
+                }
+                if (line.equals("")) {
+                    break;
+                }
+            }
+
+            DataOutputStream dos = new DataOutputStream(out);
+
+            if (method.equals("GET")) {
+                if (url.equals("/user/list.html")) {
+                    if (!loginCookie) {
                         response302Header(dos);
                     } else {
                         log.debug("user: {} ", DataBase.findAll());
-                        byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
-                        DataOutputStream dos = new DataOutputStream(out);
-                        responseTmp200Header(dos, body.length, accept);
-                        responseBody(dos, body);
                     }
-
                 }
                 byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
-                DataOutputStream dos = new DataOutputStream(out);
-                responseTmp200Header(dos, body.length, accept);
+                response200Header(dos, body.length, contentType);
                 responseBody(dos, body);
             }
 
             if(method.equals("POST")) {
-                int contentLength = 0;
-
-                while(true) {
-                    line = br.readLine();
-                    HttpRequestUtils.Pair pair = HttpRequestUtils.parseHeader(line);
-                    int length = HttpRequestUtils.getContentLength(pair);
-
-                    if(length != 0) {
-                        contentLength = length;
-                    }
-                    if(line.equals("")) {
-                        break;
-                    }
-                }
-
                 String postData = IOUtils.readData(br, contentLength);
                 Map<String, String> params = HttpRequestUtils.parseQueryString(postData);
 
@@ -103,11 +89,9 @@ public class RequestHandler extends Thread {
                     User user = new User(params.get("userId"), params.get("password"), params.get("name"), params.get("email"));
                     DataBase.addUser(user);
                     log.debug("db user : {} ", DataBase.findAll());
-                    DataOutputStream dos = new DataOutputStream(out);
                     response302Header(dos);
                 } else if(url.equals("/user/login")) {
                     User user = DataBase.findUserById(params.get("userId"));
-                    DataOutputStream dos = new DataOutputStream(out);
                     String redirectUrl = "http://localhost:8080/index.html";
                     if(user != null && user.getPassword().equals(params.get("password"))) {
                         response302Login(dos, redirectUrl, true);
@@ -145,21 +129,10 @@ public class RequestHandler extends Thread {
         }
     }
 
-    private void responseTmp200Header(DataOutputStream dos, int lengthOfBodyContent, String contentType) {
+    private void response200Header(DataOutputStream dos, int lengthOfBodyContent, String contentType) {
         try {
             dos.writeBytes("HTTP/1.1 200 OK \r\n");
             dos.writeBytes("Content-Type: " + contentType + ";charset=utf-8\r\n");
-            dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
-            dos.writeBytes("\r\n");
-        } catch (IOException e) {
-            log.error(e.getMessage());
-        }
-    }
-
-    private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
-        try {
-            dos.writeBytes("HTTP/1.1 200 OK \r\n");
-            dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
             dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
             dos.writeBytes("\r\n");
         } catch (IOException e) {

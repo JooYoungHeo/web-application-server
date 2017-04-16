@@ -23,7 +23,7 @@ public class HttpRequestUtils {
     }
 
 
-    public static String getAccept(Pair pair) {
+    public static String getContentType(Pair pair) {
         return (pair != null && pair.getKey().equals("Accept"))? pair.getValue(): null;
     }
 
