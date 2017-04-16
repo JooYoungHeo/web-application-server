@@ -22,6 +22,11 @@ public class HttpRequestUtils {
         return splitRequest[delimiter];
     }
 
+
+    public static String getAccept(Pair pair) {
+        return (pair != null && pair.getKey().equals("Accept"))? pair.getValue(): null;
+    }
+
     public static boolean getCookie(Pair pair) {
         boolean flag = false;
         if (pair != null && pair.getKey().equals("Cookie")) {

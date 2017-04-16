@@ -41,21 +41,27 @@ public class RequestHandler extends Thread {
             String url = HttpRequestUtils.parseRequestString(line, HttpRequestUtils.CONST_URL);
 
             if(method.equals("GET")) {
-                if(url.equals("/user/list.html")) {
-                    boolean isLogin = false;
-                    while(true) {
-                        line = br.readLine();
-                        HttpRequestUtils.Pair pair = HttpRequestUtils.parseHeader(line);
-                        boolean flag = HttpRequestUtils.getCookie(pair);
+                boolean isLogin = false;
+                String accept = null;
+                while(true) {
+                    line = br.readLine();
+                    HttpRequestUtils.Pair pair = HttpRequestUtils.parseHeader(line);
+                    boolean flag = HttpRequestUtils.getCookie(pair);
+                    String tmpAccept = HttpRequestUtils.getAccept(pair);
 
-                        if(flag != false) {
-                            isLogin = flag;
-                        }
-                        if(line.equals("")) {
-                            break;
-                        }
+                    if(flag != false) {
+                        isLogin = flag;
                     }
 
+                    if(tmpAccept != null) {
+                        accept = tmpAccept;
+                    }
+
+                    if(line.equals("")) {
+                        break;
+                    }
+                }
+                if(url.equals("/user/list.html")) {
                     if(!isLogin) {
                         DataOutputStream dos = new DataOutputStream(out);
                         response302Header(dos);
@@ -63,14 +69,14 @@ public class RequestHandler extends Thread {
                         log.debug("user: {} ", DataBase.findAll());
                         byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
                         DataOutputStream dos = new DataOutputStream(out);
-                        response200Header(dos, body.length);
+                        responseTmp200Header(dos, body.length, accept);
                         responseBody(dos, body);
                     }
 
                 }
                 byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
                 DataOutputStream dos = new DataOutputStream(out);
-                response200Header(dos, body.length);
+                responseTmp200Header(dos, body.length, accept);
                 responseBody(dos, body);
             }
 
@@ -79,7 +85,6 @@ public class RequestHandler extends Thread {
 
                 while(true) {
                     line = br.readLine();
-                    log.debug("line: {} ", line);
                     HttpRequestUtils.Pair pair = HttpRequestUtils.parseHeader(line);
                     int length = HttpRequestUtils.getContentLength(pair);
 
@@ -101,7 +106,6 @@ public class RequestHandler extends Thread {
                     DataOutputStream dos = new DataOutputStream(out);
                     response302Header(dos);
                 } else if(url.equals("/user/login")) {
-                    log.debug("user * login");
                     User user = DataBase.findUserById(params.get("userId"));
                     DataOutputStream dos = new DataOutputStream(out);
                     String redirectUrl = "http://localhost:8080/index.html";
@@ -137,6 +141,17 @@ public class RequestHandler extends Thread {
             dos.writeBytes("Location: " + "http://localhost:8080/index.html");
             dos.writeBytes("\r\n");
         } catch(IOException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private void responseTmp200Header(DataOutputStream dos, int lengthOfBodyContent, String contentType) {
+        try {
+            dos.writeBytes("HTTP/1.1 200 OK \r\n");
+            dos.writeBytes("Content-Type: " + contentType + ";charset=utf-8\r\n");
+            dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
+            dos.writeBytes("\r\n");
+        } catch (IOException e) {
             log.error(e.getMessage());
         }
     }
