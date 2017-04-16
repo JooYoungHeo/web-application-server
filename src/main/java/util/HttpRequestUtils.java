@@ -22,6 +22,16 @@ public class HttpRequestUtils {
         return splitRequest[delimiter];
     }
 
+    public static boolean getCookie(Pair pair) {
+        boolean flag = false;
+        if (pair != null && pair.getKey().equals("Cookie")) {
+            String value = pair.getValue();
+            String[] isLogined = value.split("=");
+            flag = Boolean.valueOf(isLogined[1]);
+        }
+        return flag;
+    }
+
     public static int getContentLength(Pair pair) {
         return (pair != null && pair.getKey().equals("Content-Length"))? Integer.parseInt(pair.getValue()) : 0;
     }

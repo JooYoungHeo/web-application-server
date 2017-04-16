@@ -22,8 +22,8 @@ public class RequestHandler extends Thread {
     }
 
     public void run() {
-        log.debug("New Client Connect! Connected IP : {}, Port : {}", connection.getInetAddress(),
-                connection.getPort());
+//        log.debug("New Client Connect! Connected IP : {}, Port : {}", connection.getInetAddress(),
+//                connection.getPort());
 
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
             // TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
@@ -41,6 +41,33 @@ public class RequestHandler extends Thread {
             String url = HttpRequestUtils.parseRequestString(line, HttpRequestUtils.CONST_URL);
 
             if(method.equals("GET")) {
+                if(url.equals("/user/list.html")) {
+                    boolean isLogin = false;
+                    while(true) {
+                        line = br.readLine();
+                        HttpRequestUtils.Pair pair = HttpRequestUtils.parseHeader(line);
+                        boolean flag = HttpRequestUtils.getCookie(pair);
+
+                        if(flag != false) {
+                            isLogin = flag;
+                        }
+                        if(line.equals("")) {
+                            break;
+                        }
+                    }
+
+                    if(!isLogin) {
+                        DataOutputStream dos = new DataOutputStream(out);
+                        response302Header(dos);
+                    } else {
+                        log.debug("user: {} ", DataBase.findAll());
+                        byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
+                        DataOutputStream dos = new DataOutputStream(out);
+                        response200Header(dos, body.length);
+                        responseBody(dos, body);
+                    }
+
+                }
                 byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
                 DataOutputStream dos = new DataOutputStream(out);
                 response200Header(dos, body.length);
@@ -52,6 +79,7 @@ public class RequestHandler extends Thread {
 
                 while(true) {
                     line = br.readLine();
+                    log.debug("line: {} ", line);
                     HttpRequestUtils.Pair pair = HttpRequestUtils.parseHeader(line);
                     int length = HttpRequestUtils.getContentLength(pair);
 
@@ -65,13 +93,39 @@ public class RequestHandler extends Thread {
 
                 String postData = IOUtils.readData(br, contentLength);
                 Map<String, String> params = HttpRequestUtils.parseQueryString(postData);
-                User user = new User(params.get("userId"), params.get("password"), params.get("name"), params.get("email"));
 
-                DataBase.addUser(user);
-                log.debug("db user : {} ", DataBase.findAll());
-                DataOutputStream dos = new DataOutputStream(out);
-                response302Header(dos);
+                if(url.equals("/user/create")) {
+                    User user = new User(params.get("userId"), params.get("password"), params.get("name"), params.get("email"));
+                    DataBase.addUser(user);
+                    log.debug("db user : {} ", DataBase.findAll());
+                    DataOutputStream dos = new DataOutputStream(out);
+                    response302Header(dos);
+                } else if(url.equals("/user/login")) {
+                    log.debug("user * login");
+                    User user = DataBase.findUserById(params.get("userId"));
+                    DataOutputStream dos = new DataOutputStream(out);
+                    String redirectUrl = "http://localhost:8080/index.html";
+                    if(user != null && user.getPassword().equals(params.get("password"))) {
+                        response302Login(dos, redirectUrl, true);
+                    } else {
+                        redirectUrl = "http://localhost:8080/user/login_failed.html";
+                        response302Login(dos, redirectUrl, false);
+                    }
+                }
+
             }
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private void response302Login(DataOutputStream dos, String redirectUrl, boolean successFlag) {
+        try{
+            dos.writeBytes("HTTP/1.1 302 FOUND \r\n");
+            dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
+            dos.writeBytes("Location: " + redirectUrl + "\r\n");
+            dos.writeBytes("Set-Cookie: logined=" + successFlag);
+            dos.writeBytes("\r\n");
         } catch (IOException e) {
             log.error(e.getMessage());
         }
