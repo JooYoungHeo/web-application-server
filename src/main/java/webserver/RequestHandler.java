@@ -30,23 +30,14 @@ public class RequestHandler extends Thread {
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
             // TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
 
-            InputStreamReader isr = new InputStreamReader(in);
-            BufferedReader br = new BufferedReader(isr);
+            HttpRequest httpRequest = new HttpRequest(in);
 
-            String line= br.readLine();
-
-            if (line == null) {
-                return;
-            }
-
-            String method = HttpRequestUtils.parseRequestString(line, HttpRequestUtils.CONST_METHOD);
-            String url = HttpRequestUtils.parseRequestString(line, HttpRequestUtils.CONST_URL);
-
-            Map<String, String> map = HttpRequest.parseRequest(br);
-
-            String contentType = map.get("Accept");
-            String loginCookie = map.get("Cookie");
+            String method = httpRequest.getMethod();
+            String url = httpRequest.getUrl();
+            String contentType = httpRequest.getHeader("Accept");
+            String loginCookie = httpRequest.getHeader("Cookie");
             boolean loginFlag = false;
+
             if(loginCookie != null) {
                 String[] splitLoginCookie = loginCookie.split("=");
                 loginFlag = Boolean.valueOf(splitLoginCookie[1]);
@@ -68,19 +59,19 @@ public class RequestHandler extends Thread {
             }
 
             if(method.equals("POST")) {
-                int contentLength = Integer.valueOf(map.get("Content-Length"));
-                String postData = IOUtils.readData(br, contentLength);
-                Map<String, String> params = HttpRequestUtils.parseQueryString(postData);
-
                 if(url.equals("/user/create")) {
-                    User user = new User(params.get("userId"), params.get("password"), params.get("name"), params.get("email"));
+                    User user = new User(
+                            httpRequest.getParameter("userId"),
+                            httpRequest.getParameter("password"),
+                            httpRequest.getParameter("name"),
+                            httpRequest.getParameter("email"));
                     DataBase.addUser(user);
                     log.debug("db user : {} ", DataBase.findAll());
                     HttpResponse.response302Header(dos);
                 } else if(url.equals("/user/login")) {
-                    User user = DataBase.findUserById(params.get("userId"));
+                    User user = DataBase.findUserById(httpRequest.getParameter("userId"));
                     String redirectUrl = "http://localhost:8080/index.html";
-                    if(user != null && user.getPassword().equals(params.get("password"))) {
+                    if(user != null && user.getPassword().equals(httpRequest.getParameter("password"))) {
                         HttpResponse.response302Login(dos, redirectUrl, true);
                     } else {
                         redirectUrl = "http://localhost:8080/user/login_failed.html";
