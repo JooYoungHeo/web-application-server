@@ -29,8 +29,15 @@ public class RequestHandler extends Thread {
             // TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
 
             HttpRequest httpRequest = new HttpRequest(in);
-            DataOutputStream dos = new DataOutputStream(out);
-            HttpResponse httpResponse = new HttpResponse(dos);
+            HttpResponse httpResponse = new HttpResponse(out);
+
+            Controller controller = RequestMapping.getController(httpRequest.getUrl());
+
+            if(controller == null){
+                httpResponse.sendRedirect();
+            } else {
+
+            }
 
             String method = httpRequest.getMethod();
             String url = httpRequest.getUrl();

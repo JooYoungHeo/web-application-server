@@ -2,6 +2,8 @@ package http;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,8 +14,8 @@ public class HttpResponse {
     private static final Logger log = LoggerFactory.getLogger(HttpResponse.class);
     DataOutputStream dos;
 
-    public HttpResponse(DataOutputStream dos){
-        this.dos = dos;
+    public HttpResponse(OutputStream out){
+        this.dos = new DataOutputStream(out);
     }
 
     public void addHeader(String key, String value) throws IOException{

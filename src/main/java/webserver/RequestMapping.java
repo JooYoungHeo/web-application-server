@@ -18,7 +18,7 @@ public class RequestMapping {
             .put("/user/login", new LoginController())
             .build();
 
-    public Controller getController(String url){
+    public static Controller getController(String url){
         return controllerMap.get(url);
     }
 }
