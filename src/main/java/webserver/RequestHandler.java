@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
 
+import controller.Controller;
 import db.DataBase;
 import http.HttpRequest;
 import http.HttpResponse;
@@ -28,6 +29,8 @@ public class RequestHandler extends Thread {
             // TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
 
             HttpRequest httpRequest = new HttpRequest(in);
+            DataOutputStream dos = new DataOutputStream(out);
+            HttpResponse httpResponse = new HttpResponse(dos);
 
             String method = httpRequest.getMethod();
             String url = httpRequest.getUrl();
@@ -39,9 +42,6 @@ public class RequestHandler extends Thread {
                 String[] splitLoginCookie = loginCookie.split("=");
                 loginFlag = Boolean.valueOf(splitLoginCookie[1]);
             }
-
-            DataOutputStream dos = new DataOutputStream(out);
-            HttpResponse httpResponse = new HttpResponse(dos);
 
             if (method.equals("GET")) {
                 if (url.equals("/user/list.html")) {
