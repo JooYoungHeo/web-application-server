@@ -36,7 +36,7 @@ public class RequestHandler extends Thread {
             if(controller == null){
                 httpResponse.sendRedirect();
             } else {
-
+                controller.service(httpRequest, httpResponse);
             }
 
             String method = httpRequest.getMethod();
